@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shop All — MAISON NOIR</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="nav-scrim"></div>
+
+<header class="site-header">
+  <div class="announce-bar">Complimentary shipping on orders over ₹5,000 — Use code MAISON at checkout</div>
+  <div class="header-top">
+    <a href="index.html" class="logo">CHITTU<span>·</span>CLOTHS</a>
+    <nav class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="shop.html?category=Women">Women</a>
+      <a href="shop.html?category=Men">Men</a>
+      <a href="shop.html?category=New">New Arrivals</a>
+      <a href="shop.html?category=Premium">Premium</a>
+      <a href="track.html">Track Order</a>
+    </nav>
+    <div class="header-actions">
+      <a href="shop.html" class="icon-btn" aria-label="Search / Shop"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></a>
+      <a href="admin.html" class="icon-btn" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></a>
+      <a href="cart.html" class="icon-btn" aria-label="Cart"><svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><span class="cart-badge" data-cart-count>0</span></a>
+      <button class="nav-toggle" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-banner">
+  <div class="breadcrumb"><a href="index.html">Home</a> / <span id="crumb-cat">Shop All</span></div>
+  <h1 id="shop-title">Shop All</h1>
+</div>
+
+<section class="section" style="padding-top:48px;">
+  <div class="container">
+
+    <button class="btn btn-outline btn-sm mobile-filter-toggle" id="mobileFilterToggle" style="margin-bottom:20px;">Filter &amp; Sort</button>
+
+    <div class="shop-layout">
+      <aside class="filters" id="filters">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+          <h4 style="font-size:0.9rem; letter-spacing:0.1em; text-transform:uppercase;">Filters</h4>
+          <button class="clear-filters" id="clearFilters">Clear all</button>
+        </div>
+
+        <div class="filter-group">
+          <h4>Category</h4>
+          <label class="filter-option"><input type="checkbox" name="category" value="Women"> Women</label>
+          <label class="filter-option"><input type="checkbox" name="category" value="Men"> Men</label>
+          <label class="filter-option"><input type="checkbox" name="category" value="Premium"> Premium</label>
+          <label class="filter-option"><input type="checkbox" name="category" value="New"> New Arrivals</label>
+        </div>
+
+        <div class="filter-group">
+          <h4>Size</h4>
+          <div class="size-pills" id="sizeFilters">
+            <button class="size-pill" data-size="XS">XS</button>
+            <button class="size-pill" data-size="S">S</button>
+            <button class="size-pill" data-size="M">M</button>
+            <button class="size-pill" data-size="L">L</button>
+            <button class="size-pill" data-size="XL">XL</button>
+            <button class="size-pill" data-size="XXL">XXL</button>
+          </div>
+        </div>
+
+        <div class="filter-group" style="border-bottom:none;">
+          <h4>Price up to <span id="priceLabel">₹35,000</span></h4>
+          <div class="price-range">
+            <input type="range" id="priceRange" min="5000" max="35000" step="500" value="35000">
+          </div>
+        </div>
+      </aside>
+
+      <div>
+        <div class="shop-toolbar">
+          <span class="result-count" id="resultCount">12 products</span>
+          <select class="sort-select" id="sortSelect">
+            <option value="featured">Sort: Featured</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+            <option value="name-asc">Name: A–Z</option>
+            <option value="new">Newest First</option>
+          </select>
+        </div>
+        <div class="product-grid" id="shopGrid"></div>
+        <div class="empty-state" id="emptyState" style="display:none;">
+          <p style="font-family: var(--font-display); font-size:1.4rem; margin-bottom:10px;">No pieces match those filters</p>
+          <p>Try widening your price range or clearing a filter.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer" style="margin-top:20px;">
+  <div class="container footer-bottom" style="border-top:1px solid rgba(217,192,139,0.18); padding-top:20px;">
+    <span>&copy; <span data-year></span> Maison Noir. All rights reserved.</span>
+    <div class="payment-icons"><span>UPI</span><span>Visa</span><span>Mastercard</span><span>RuPay</span></div>
+    <a href="admin.html">Admin</a>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/data.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/main.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+  const initialCategory = params.get('category');
+
+  const state = {
+    categories: new Set(),
+    sizes: new Set(),
+    maxPrice: 35000,
+    sort: 'featured'
+  };
+
+  const catNames = { Women: 'Women', Men: 'Men', New: 'New Arrivals', Premium: 'Premium' };
+
+  if (initialCategory && catNames[initialCategory]) {
+    document.getElementById('shop-title').textContent = catNames[initialCategory];
+    document.getElementById('crumb-cat').textContent = catNames[initialCategory];
+    if (initialCategory !== 'New') {
+      state.categories.add(initialCategory);
+      document.querySelector(`input[value="${initialCategory}"]`).checked = true;
+    }
+  }
+
+  function matchesFilters(p) {
+    if (initialCategory === 'New' && !p.tags.includes('new') && state.categories.size === 0) {
+      // when landing from "New Arrivals" show new-tagged items by default unless user picks categories
+    }
+    const catOk = state.categories.size === 0
+      ? (initialCategory === 'New' ? p.tags.includes('new') : true)
+      : [...state.categories].some(c => c === 'New' ? p.tags.includes('new') : p.category === c);
+    const sizeOk = state.sizes.size === 0 || p.sizes.some(s => state.sizes.has(s));
+    const priceOk = p.price <= state.maxPrice;
+    return catOk && sizeOk && priceOk;
+  }
+
+  function sortProducts(list) {
+    const arr = [...list];
+    switch (state.sort) {
+      case 'price-asc': return arr.sort((a, b) => a.price - b.price);
+      case 'price-desc': return arr.sort((a, b) => b.price - a.price);
+      case 'name-asc': return arr.sort((a, b) => a.name.localeCompare(b.name));
+      case 'new': return arr.sort((a, b) => (b.tags.includes('new') ? 1 : 0) - (a.tags.includes('new') ? 1 : 0));
+      default: return arr;
+    }
+  }
+
+  function productCard(p) {
+    const alt = p.images[1] || p.images[0];
+    return `
+    <div class="product-card">
+      <a href="product.html?id=${p.id}">
+        <div class="product-media">
+          <span class="look-tag">Look ${p.look}</span>
+          <div class="product-badges">
+            ${p.tags.includes('new') ? '<span class="badge">New</span>' : ''}
+            ${p.bestseller ? '<span class="badge badge-gold">Bestseller</span>' : ''}
+          </div>
+          <img class="img-main" src="${p.images[0]}" alt="${p.name}" loading="lazy">
+          <img class="img-alt" src="${alt}" alt="" loading="lazy">
+        </div>
+      </a>
+      <button class="quick-add" onclick="addToCart('${p.id}','${p.sizes[0]}',1); showToast('${p.name.replace(/'/g,"")} added to cart');">Quick Add</button>
+      <div class="product-info">
+        <div><h3><a href="product.html?id=${p.id}">${p.name}</a></h3><span class="cat">${p.category}</span></div>
+        <span class="product-price">${formatPrice(p.price)}</span>
+      </div>
+    </div>`;
+  }
+
+  function render() {
+    const list = sortProducts(getAllProductsLive().filter(matchesFilters));
+    const grid = document.getElementById('shopGrid');
+    grid.innerHTML = list.map(productCard).join('');
+    document.getElementById('resultCount').textContent = `${list.length} product${list.length === 1 ? '' : 's'}`;
+    document.getElementById('emptyState').style.display = list.length ? 'none' : 'block';
+  }
+
+  document.querySelectorAll('input[name="category"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      cb.checked ? state.categories.add(cb.value) : state.categories.delete(cb.value);
+      render();
+    });
+  });
+
+  document.querySelectorAll('.size-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('is-active');
+      const s = btn.dataset.size;
+      btn.classList.contains('is-active') ? state.sizes.add(s) : state.sizes.delete(s);
+      render();
+    });
+  });
+
+  const priceRange = document.getElementById('priceRange');
+  priceRange.addEventListener('input', () => {
+    state.maxPrice = Number(priceRange.value);
+    document.getElementById('priceLabel').textContent = formatPrice(state.maxPrice);
+    render();
+  });
+
+  document.getElementById('sortSelect').addEventListener('change', e => { state.sort = e.target.value; render(); });
+
+  document.getElementById('clearFilters').addEventListener('click', () => {
+    state.categories.clear(); state.sizes.clear(); state.maxPrice = 35000;
+    document.querySelectorAll('input[name="category"]').forEach(cb => cb.checked = false);
+    document.querySelectorAll('.size-pill').forEach(b => b.classList.remove('is-active'));
+    priceRange.value = 35000;
+    document.getElementById('priceLabel').textContent = '₹35,000';
+    render();
+  });
+
+  const mobileToggle = document.getElementById('mobileFilterToggle');
+  const filters = document.getElementById('filters');
+  mobileToggle.addEventListener('click', () => filters.classList.toggle('is-open'));
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('is-visible');
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => t.classList.remove('is-visible'), 2200);
+  }
+
+  render();
+</script>
+</body>
+</html>

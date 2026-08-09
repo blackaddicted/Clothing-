@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard — MAISON NOIR</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="admin-shell">
+  <aside class="admin-side">
+    <a href="index.html" class="logo">CHITTU<span>·</span>CLOTHS</a>
+    <nav class="admin-nav">
+      <a href="#overview" class="is-active" data-tab="overview">Overview</a>
+      <a href="#products" data-tab="products">Products</a>
+      <a href="#orders" data-tab="orders">Orders</a>
+      <a href="index.html" style="margin-top:24px; border-top:1px solid rgba(217,192,139,0.18); padding-top:20px;">← Back to Store</a>
+    </nav>
+  </aside>
+
+  <main class="admin-main">
+    <!-- OVERVIEW -->
+    <section id="tab-overview">
+      <div class="admin-head"><h1>Overview</h1></div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="label">Total Orders</div><div class="value" id="statOrders">0</div></div>
+        <div class="stat-card"><div class="label">Revenue</div><div class="value" id="statRevenue">₹0</div></div>
+        <div class="stat-card"><div class="label">Products Live</div><div class="value" id="statProducts">0</div></div>
+        <div class="stat-card"><div class="label">Pending Orders</div><div class="value" id="statPending">0</div></div>
+      </div>
+      <div class="admin-panel">
+        <div class="admin-panel-head"><h3>Recent Orders</h3><a href="#orders" class="btn-ghost" onclick="switchTab('orders')">View all</a></div>
+        <div class="table-wrap"><table class="admin-table">
+          <thead><tr><th>Order ID</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody id="recentOrdersBody"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section id="tab-products" style="display:none;">
+      <div class="admin-head">
+        <h1>Products</h1>
+        <button class="btn btn-primary" id="addProductBtn">+ Add Product</button>
+      </div>
+      <div class="admin-panel">
+        <div class="table-wrap"><table class="admin-table">
+          <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Sizes</th><th>Tags</th><th>Actions</th></tr></thead>
+          <tbody id="productsBody"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- ORDERS -->
+    <section id="tab-orders" style="display:none;">
+      <div class="admin-head"><h1>Orders</h1></div>
+      <div class="admin-panel">
+        <div class="table-wrap"><table class="admin-table">
+          <thead><tr><th>Order ID</th><th>Customer</th><th>Date</th><th>Items</th><th>Total</th><th>Status</th><th>Update</th></tr></thead>
+          <tbody id="ordersBody"></tbody>
+        </table></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Product modal -->
+<div class="modal-scrim" id="productModal">
+  <div class="modal-box">
+    <button class="modal-close" id="closeModal">&times;</button>
+    <h3 id="modalTitle">Add Product</h3>
+    <form id="productForm">
+      <input type="hidden" id="pId">
+      <div class="field"><label for="pName">Product Name</label><input type="text" id="pName" required></div>
+      <div class="field-row">
+        <div class="field"><label for="pCategory">Category</label>
+          <select id="pCategory">
+            <option>Women</option><option>Men</option><option>Premium</option>
+          </select>
+        </div>
+        <div class="field"><label for="pPrice">Price (₹)</label><input type="number" id="pPrice" min="0" required></div>
+      </div>
+      <div class="field"><label for="pSizes">Sizes (comma separated)</label><input type="text" id="pSizes" placeholder="S, M, L, XL" required></div>
+      <div class="field"><label for="pImage">Image URL</label><input type="text" id="pImage" placeholder="https://..." required></div>
+      <div class="field"><label for="pDesc">Description</label><textarea id="pDesc" rows="3"></textarea></div>
+      <div class="field">
+        <label class="filter-option" style="display:inline-flex;"><input type="checkbox" id="pNew"> Mark as New Arrival</label>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Save Product</button>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/data.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/main.js"></script>
+<script>
+  function switchTab(tab) {
+    ['overview', 'products', 'orders'].forEach(t => {
+      document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+      document.querySelector(`.admin-nav a[data-tab="${t}"]`).classList.toggle('is-active', t === tab);
+    });
+  }
+  document.querySelectorAll('.admin-nav a[data-tab]').forEach(a => {
+    a.addEventListener('click', e => { e.preventDefault(); switchTab(a.dataset.tab); });
+  });
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('is-visible');
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => t.classList.remove('is-visible'), 2200);
+  }
+
+  /* ---------- overview ---------- */
+  function renderOverview() {
+    const orders = getOrders();
+    const revenue = orders.reduce((s, o) => s + o.total, 0);
+    const pending = orders.filter(o => o.status !== 'Delivered').length;
+    document.getElementById('statOrders').textContent = orders.length;
+    document.getElementById('statRevenue').textContent = formatPrice(revenue);
+    document.getElementById('statProducts').textContent = getAllProductsLive().length;
+    document.getElementById('statPending').textContent = pending;
+
+    document.getElementById('recentOrdersBody').innerHTML = orders.slice(0, 6).map(o => `
+      <tr>
+        <td>${o.id}</td>
+        <td>${o.customer.name}</td>
+        <td>${formatPrice(o.total)}</td>
+        <td><span class="status-pill status-${o.status}">${o.status}</span></td>
+      </tr>`).join('') || `<tr><td colspan="4" class="empty-admin">No orders yet.</td></tr>`;
+  }
+
+  /* ---------- products ---------- */
+  function renderProducts() {
+    const products = getAllProductsLive();
+    document.getElementById('productsBody').innerHTML = products.map(p => `
+      <tr>
+        <td style="display:flex; align-items:center; gap:12px;"><img class="admin-thumb" src="${p.images[0]}" alt=""> <span>${p.name}</span></td>
+        <td>${p.category}</td>
+        <td>${formatPrice(p.price)}</td>
+        <td>${p.sizes.join(', ')}</td>
+        <td>${p.tags.join(', ') || '—'}</td>
+        <td class="table-actions">
+          <button onclick="openEdit('${p.id}')">Edit</button>
+          <button class="danger" onclick="deleteProduct('${p.id}')">Delete</button>
+        </td>
+      </tr>`).join('') || `<tr><td colspan="6" class="empty-admin">No products yet. Add your first piece.</td></tr>`;
+  }
+
+  const modal = document.getElementById('productModal');
+  const form = document.getElementById('productForm');
+
+  function openAdd() {
+    document.getElementById('modalTitle').textContent = 'Add Product';
+    form.reset();
+    document.getElementById('pId').value = '';
+    modal.classList.add('is-open');
+  }
+
+  function openEdit(id) {
+    const p = getAllProductsLive().find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('modalTitle').textContent = 'Edit Product';
+    document.getElementById('pId').value = p.id;
+    document.getElementById('pName').value = p.name;
+    document.getElementById('pCategory').value = p.category === 'New' ? 'Women' : p.category;
+    document.getElementById('pPrice').value = p.price;
+    document.getElementById('pSizes').value = p.sizes.join(', ');
+    document.getElementById('pImage').value = p.images[0];
+    document.getElementById('pDesc').value = p.description || '';
+    document.getElementById('pNew').checked = p.tags.includes('new');
+    modal.classList.add('is-open');
+  }
+
+  function deleteProduct(id) {
+    if (!confirm('Delete this product? This cannot be undone.')) return;
+    adminDeleteProduct(id);
+    renderProducts();
+    renderOverview();
+    showToast('Product deleted');
+  }
+
+  document.getElementById('addProductBtn').addEventListener('click', openAdd);
+  document.getElementById('closeModal').addEventListener('click', () => modal.classList.remove('is-open'));
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('is-open'); });
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const id = document.getElementById('pId').value;
+    const sizes = document.getElementById('pSizes').value.split(',').map(s => s.trim()).filter(Boolean);
+    const image = document.getElementById('pImage').value;
+    const isNew = document.getElementById('pNew').checked;
+    const data = {
+      name: document.getElementById('pName').value,
+      category: document.getElementById('pCategory').value,
+      price: Number(document.getElementById('pPrice').value),
+      sizes,
+      images: [image, image],
+      description: document.getElementById('pDesc').value,
+      fabric: "Details available in-store.",
+      tags: isNew ? ['new'] : [],
+      bestseller: false,
+      look: String(getAllProductsLive().length + 1).padStart(2, '0')
+    };
+
+    if (id) {
+      adminEditProduct(id, data);
+      showToast('Product updated');
+    } else {
+      data.id = 'mn-' + Date.now();
+      adminAddProduct(data);
+      showToast('Product added');
+    }
+    modal.classList.remove('is-open');
+    renderProducts();
+    renderOverview();
+  });
+
+  /* ---------- orders ---------- */
+  function renderOrders() {
+    const orders = getOrders();
+    document.getElementById('ordersBody').innerHTML = orders.map(o => `
+      <tr>
+        <td>${o.id}</td>
+        <td>${o.customer.name}<br><span style="color:var(--taupe); font-size:0.8rem;">${o.customer.phone}</span></td>
+        <td>${new Date(o.date).toLocaleDateString('en-IN')}</td>
+        <td>${o.items.reduce((s, i) => s + i.qty, 0)}</td>
+        <td>${formatPrice(o.total)}</td>
+        <td><span class="status-pill status-${o.status}">${o.status}</span></td>
+        <td>
+          <select class="status-select" onchange="changeStatus('${o.id}', this.value)">
+            ${ORDER_STEPS.map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+        </td>
+      </tr>`).join('') || `<tr><td colspan="7" class="empty-admin">No orders yet.</td></tr>`;
+  }
+
+  function changeStatus(id, status) {
+    updateOrderStatus(id, status);
+    renderOrders();
+    renderOverview();
+    showToast(`Order ${id} marked as ${status}`);
+  }
+
+  renderOverview();
+  renderProducts();
+  renderOrders();
+</script>
+</body>
+</html>

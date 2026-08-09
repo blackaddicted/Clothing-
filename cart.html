@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Cart — MAISON NOIR</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="nav-scrim"></div>
+
+<header class="site-header">
+  <div class="announce-bar">Complimentary shipping on orders over ₹5,000 — Use code MAISON at checkout</div>
+  <div class="header-top">
+    <a href="index.html" class="logo">CHITTU<span>·</span>CLOTHS</a>
+    <nav class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="shop.html?category=Women">Women</a>
+      <a href="shop.html?category=Men">Men</a>
+      <a href="shop.html?category=New">New Arrivals</a>
+      <a href="shop.html?category=Premium">Premium</a>
+      <a href="track.html">Track Order</a>
+    </nav>
+    <div class="header-actions">
+      <a href="shop.html" class="icon-btn" aria-label="Search / Shop"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></a>
+      <a href="admin.html" class="icon-btn" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></a>
+      <a href="cart.html" class="icon-btn" aria-label="Cart"><svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><span class="cart-badge" data-cart-count>0</span></a>
+      <button class="nav-toggle" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-banner">
+  <div class="breadcrumb"><a href="index.html">Home</a> / Cart</div>
+  <h1>Your Cart</h1>
+</div>
+
+<section class="section" style="padding-top:48px;">
+  <div class="container">
+    <div id="cartWrap"></div>
+  </div>
+</section>
+
+<footer class="site-footer" style="margin-top:20px;">
+  <div class="container footer-bottom" style="border-top:1px solid rgba(217,192,139,0.18); padding-top:20px;">
+    <span>&copy; <span data-year></span> Maison Noir. All rights reserved.</span>
+    <div class="payment-icons"><span>UPI</span><span>Visa</span><span>Mastercard</span><span>RuPay</span></div>
+    <a href="admin.html">Admin</a>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/main.js"></script>
+<script>
+  function renderCart() {
+    const cart = getCart();
+    const wrap = document.getElementById('cartWrap');
+
+    if (!cart.length) {
+      wrap.innerHTML = `
+        <div class="empty-cart">
+          <svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          <h2 style="font-size:1.6rem; margin-bottom:12px;">Your cart is empty</h2>
+          <p style="color:var(--taupe); margin-bottom:26px;">Pieces you add will appear here.</p>
+          <a href="shop.html" class="btn btn-primary">Continue Shopping</a>
+        </div>`;
+      return;
+    }
+
+    const rows = cart.map(item => {
+      const p = getProductById(item.id) || getAllProductsLive().find(x => x.id === item.id);
+      if (!p) return '';
+      return `
+      <div class="cart-item" data-id="${item.id}" data-size="${item.size}">
+        <a href="product.html?id=${p.id}"><img src="${p.images[0]}" alt="${p.name}"></a>
+        <div>
+          <h3><a href="product.html?id=${p.id}">${p.name}</a></h3>
+          <p class="meta">Size: ${item.size} &nbsp;·&nbsp; ${formatPrice(p.price)} each</p>
+          <div class="cart-item-controls">
+            <div class="qty-selector">
+              <button class="cart-qty-minus" aria-label="Decrease quantity">–</button>
+              <span>${item.qty}</span>
+              <button class="cart-qty-plus" aria-label="Increase quantity">+</button>
+            </div>
+          </div>
+          <a href="#" class="remove-link">Remove</a>
+        </div>
+        <div class="cart-item-price">${formatPrice(p.price * item.qty)}</div>
+      </div>`;
+    }).join('');
+
+    const subtotal = cartTotal();
+
+    wrap.innerHTML = `
+      <div class="cart-layout">
+        <div>${rows}</div>
+        ${summaryHTML(subtotal)}
+      </div>`;
+
+    attachHandlers();
+  }
+
+  function summaryHTML(subtotal) {
+    const freeShipThreshold = 5000;
+    const shipCost = subtotal >= freeShipThreshold ? 0 : 150;
+    const total = subtotal + shipCost;
+    return `
+      <div class="summary-card">
+        <h3>Order Summary</h3>
+        <div class="summary-row"><span>Subtotal</span><span>${formatPrice(subtotal)}</span></div>
+        <div class="summary-row"><span>Shipping</span><span>${shipCost === 0 ? 'Free' : formatPrice(shipCost)}</span></div>
+        <div class="promo-row">
+          <input type="text" class="field-inline" placeholder="Promo code" style="border:1px solid var(--line); padding:12px; flex:1; border-radius:2px;">
+          <button class="btn btn-outline btn-sm">Apply</button>
+        </div>
+        <div class="summary-row total"><span>Total</span><span>${formatPrice(total)}</span></div>
+        <a href="checkout.html" class="btn btn-primary btn-block" style="margin-top:20px;">Proceed to Checkout</a>
+        <a href="shop.html" class="btn-ghost" style="display:block; text-align:center; margin-top:16px;">Continue Shopping</a>
+      </div>`;
+  }
+
+  function attachHandlers() {
+    document.querySelectorAll('.cart-item').forEach(row => {
+      const id = row.dataset.id, size = row.dataset.size;
+      row.querySelector('.cart-qty-minus').addEventListener('click', () => {
+        const item = getCart().find(i => i.id === id && i.size === size);
+        if (item) updateCartQty(id, size, item.qty - 1 <= 0 ? 1 : item.qty - 1);
+        if (item && item.qty <= 1) { /* keep min 1 */ }
+        renderCart();
+      });
+      row.querySelector('.cart-qty-plus').addEventListener('click', () => {
+        const item = getCart().find(i => i.id === id && i.size === size);
+        if (item) updateCartQty(id, size, item.qty + 1);
+        renderCart();
+      });
+      row.querySelector('.remove-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        removeFromCart(id, size);
+        renderCart();
+      });
+    });
+  }
+
+  renderCart();
+</script>
+</body>
+</html>
